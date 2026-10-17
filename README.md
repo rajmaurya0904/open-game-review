@@ -10,6 +10,18 @@ Free, unlimited chess game reviews for your Chess.com games. Stockfish 18 runs i
 - **Paste any PGN**, from Lichess, an OTB scoresheet, or anywhere else.
 - Reviews are cached in your browser, so reopening a game is instant.
 
+### Play vs Bot
+
+Practice against Stockfish with a live coach:
+
+- **11 strength levels**, from Beginner (≈500) to Maximum. Levels from 1350 up use Stockfish's own Elo limiter. Lower levels use a shallow search plus occasional random moves, so they blunder the way beginners do.
+- **Live coach:** a second, full-strength engine labels every move as soon as you play it ("Ba6 is a blunder. Best was d4."), and the eval bar updates as you go. You can turn it off to play blind and still get the review at the end.
+- **Hint:** the first press highlights the piece to move, the second shows the full move.
+- **Take back** any move, including straight from the coach's warning.
+- **Play as** White, Black or random, with no clock, 5 min, 10 min or 15 | 10.
+- **Review game:** sends the finished game straight into the full review screen.
+- Move pieces by dragging or by clicking. A game in progress survives a page reload.
+
 ## Fair play
 
 This tool only ever analyzes **finished** games. The Chess.com API does not publish live games, and the app does not read your screen or the game page. Using an engine during a game you're playing breaks Chess.com's fair-play policy, so please don't modify this tool to do that.
@@ -51,11 +63,12 @@ Accuracy uses the open Lichess formula, so its numbers won't exactly match Chess
 ## Project layout
 
 ```
-src/lib/engine.ts      UCI wrapper around the Stockfish Web Worker
+src/lib/engine.ts      UCI wrapper around the Stockfish Web Workers (review, coach, bot)
+src/lib/bot.ts         Bot strength levels and move choice
 src/lib/review.ts      PGN parsing, win chance, move labels, accuracy
 src/lib/chesscom.ts    Chess.com published-data API client
 src/lib/useReview.ts   Runs and caches the analysis for a game
-src/components/        Board, eval graph, move list, summary, game list
+src/components/        Review and play screens, boards, eval graph, move list, summary
 scripts/copy-engine.mjs  Copies the Stockfish build into public/engine
 ```
 

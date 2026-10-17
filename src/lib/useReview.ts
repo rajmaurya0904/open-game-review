@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Engine, type PositionAnalysis } from './engine'
+import { reviewEngine, type PositionAnalysis } from './engine'
 import { buildReview, parseGame, terminalScore, type ParsedGame } from './review'
-
-let engine: Engine | null = null
-const getEngine = () => (engine ??= new Engine())
 
 const CACHE_PREFIX = 'ogr:v1:'
 
@@ -63,7 +60,7 @@ export function useReview(source: ReviewSource | null, depth: number) {
     setAnalyses([...results])
     ;(async () => {
       try {
-        const sf = getEngine()
+        const sf = reviewEngine()
         for (let i = 0; i < game.fens.length; i++) {
           if (run !== token.current) return
           const fen = game.fens[i]
@@ -81,7 +78,7 @@ export function useReview(source: ReviewSource | null, depth: number) {
     return () => {
       // Abandon this run; finish the in-flight search quickly.
       if (run === token.current) token.current++
-      engine?.stop()
+      reviewEngine().stop()
     }
   }, [source, game, depth])
 

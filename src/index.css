@@ -614,3 +614,166 @@ textarea:focus {
     margin-left: 0;
   }
 }
+
+/* Mode tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.tabs button {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 6px 12px;
+}
+.tabs button.on {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Play vs Bot */
+.play-side h2 {
+  margin: 4px 0 10px;
+  font-size: 18px;
+}
+.setup,
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls .full {
+  margin-top: 0;
+}
+.field {
+  margin-bottom: 6px;
+}
+.field-label {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.levels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.level {
+  display: flex;
+  justify-content: space-between;
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+  padding: 6px 10px;
+}
+.level:hover {
+  background: var(--surface-2);
+}
+.level.selected {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.segmented {
+  display: flex;
+  gap: 4px;
+}
+.segmented.wrap {
+  flex-wrap: wrap;
+}
+.segmented button {
+  flex: 1;
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+  font-weight: 500;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+.segmented button.on {
+  border-color: var(--accent);
+  background: #2c3a26;
+}
+.play-button {
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 4px;
+}
+.check.field {
+  margin-left: 0;
+  align-items: flex-start;
+  font-size: 13px;
+}
+.player-strip.play {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.thinking {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--accent-2);
+  animation: pulse 1.2s infinite;
+}
+.clock {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.clock.active {
+  background: #e9ebef;
+  color: #1b1d21;
+}
+.clock.active.low {
+  background: var(--danger);
+  color: #fff;
+}
+.eval-bar.hidden {
+  visibility: hidden;
+}
+.coach-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.small-button {
+  padding: 4px 10px;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+.result-card {
+  flex: none;
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.result-card.win {
+  border-color: var(--accent);
+}
+.result-card.loss {
+  border-color: var(--danger);
+}
+.result-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+.move-cell.static {
+  cursor: default;
+}
+.move-cell.static:hover {
+  background: transparent;
+}

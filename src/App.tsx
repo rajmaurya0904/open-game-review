@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GameList } from './components/GameList'
 import { EvalGraph } from './components/EvalGraph'
 import { MoveList } from './components/MoveList'
+import { PlayView } from './components/PlayView'
 import { ReviewBoard } from './components/ReviewBoard'
 import { Summary } from './components/Summary'
 import { currentMonthUrl, getArchives, getMonth, sideOf, type ApiGame } from './lib/chesscom'
@@ -33,7 +34,10 @@ function hash(text: string) {
   return (h >>> 0).toString(36)
 }
 
+type Mode = 'review' | 'play'
+
 export default function App() {
+  const [mode, setMode] = useState<Mode>(() => (stored('ogr:mode', 'review') === 'play' ? 'play' : 'review'))
   const [input, setInput] = useState(() => stored('ogr:user', ''))
   const [username, setUsername] = useState('')
   const [archives, setArchives] = useState<string[]>([])
@@ -148,6 +152,19 @@ export default function App() {
     setWatching((w) => !w)
   }
 
+  const switchMode = (m: Mode) => {
+    setMode(m)
+    store('ogr:mode', m)
+  }
+
+  const reviewBotGame = (pgn: string) => {
+    switchMode('review')
+    setSelectedGame(null)
+    setSource({ id: `bot:${hash(pgn)}`, pgn })
+    setPly(0)
+    setFlipped(false)
+  }
+
   const reviewPgn = () => {
     const pgn = pgnText.trim()
     if (!pgn) return
@@ -160,6 +177,7 @@ export default function App() {
 
   const maxPly = game ? game.plies.length : 0
   useEffect(() => {
+    if (mode !== 'review') return
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
@@ -173,7 +191,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [maxPly])
+  }, [maxPly, mode])
 
   const mySide = selectedGame && username ? sideOf(selectedGame, username) : null
   const baseOrientation = mySide ?? 'white'
@@ -196,42 +214,56 @@ export default function App() {
         <div className="brand">
           <span className="brand-mark">♞</span> Open Game Review
         </div>
-        <form className="user-form" onSubmit={loadUser}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Chess.com username"
-            aria-label="Chess.com username"
-            spellCheck={false}
-          />
-          <button type="submit" disabled={loading || !input.trim()}>
-            {loading ? 'Loading…' : 'Load games'}
+        <nav className="tabs" aria-label="Mode">
+          <button className={mode === 'review' ? 'on' : ''} onClick={() => switchMode('review')}>
+            Review
           </button>
-        </form>
-        <div className="top-actions">
-          <button className="ghost" onClick={() => setPgnOpen((o) => !o)}>
-            Paste PGN
+          <button className={mode === 'play' ? 'on' : ''} onClick={() => switchMode('play')}>
+            Play vs Bot
           </button>
-          <label className="depth">
-            Depth
-            <select
-              value={depth}
-              onChange={(e) => {
-                setDepth(Number(e.target.value))
-                store('ogr:depth', e.target.value)
-              }}
-            >
-              {DEPTHS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        </nav>
+        {mode === 'review' && (
+          <form className="user-form" onSubmit={loadUser}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Chess.com username"
+              aria-label="Chess.com username"
+              spellCheck={false}
+            />
+            <button type="submit" disabled={loading || !input.trim()}>
+              {loading ? 'Loading…' : 'Load games'}
+            </button>
+          </form>
+        )}
+        {mode === 'review' && (
+          <div className="top-actions">
+            <button className="ghost" onClick={() => setPgnOpen((o) => !o)}>
+              Paste PGN
+            </button>
+            <label className="depth">
+              Depth
+              <select
+                value={depth}
+                onChange={(e) => {
+                  setDepth(Number(e.target.value))
+                  store('ogr:depth', e.target.value)
+                }}
+              >
+                {DEPTHS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
       </header>
 
-      {pgnOpen && (
+      {mode === 'play' && <PlayView onReview={reviewBotGame} />}
+
+      {mode === 'review' && pgnOpen && (
         <div className="pgn-panel">
           <textarea
             value={pgnText}
@@ -250,119 +282,121 @@ export default function App() {
         </div>
       )}
 
-      {error && <div className="banner error">{error}</div>}
+      {mode === 'review' && error && <div className="banner error">{error}</div>}
 
-      <main className="layout">
-        <aside className="sidebar">
-          {username ? (
-            <>
-              <div className="watch">
-                <button className={`watch-toggle${watching ? ' on' : ''}`} onClick={toggleWatch}>
-                  <span className="watch-dot" /> {watching ? 'Watching for new games' : 'Watch for new games'}
-                </button>
-                <p className="muted small">
-                  {watching
-                    ? `Checks every 30 s${lastCheck ? `, last at ${lastCheck.toLocaleTimeString()}` : ''}. Finished games open here automatically, usually within a minute or two.`
-                    : 'Opens each game for review as soon as Chess.com publishes it. Games in progress are never analyzed.'}
+      {mode === 'review' && (
+        <main className="layout">
+          <aside className="sidebar">
+            {username ? (
+              <>
+                <div className="watch">
+                  <button className={`watch-toggle${watching ? ' on' : ''}`} onClick={toggleWatch}>
+                    <span className="watch-dot" /> {watching ? 'Watching for new games' : 'Watch for new games'}
+                  </button>
+                  <p className="muted small">
+                    {watching
+                      ? `Checks every 30 s${lastCheck ? `, last at ${lastCheck.toLocaleTimeString()}` : ''}. Finished games open here automatically, usually within a minute or two.`
+                      : 'Opens each game for review as soon as Chess.com publishes it. Games in progress are never analyzed.'}
+                  </p>
+                </div>
+                <GameList
+                  games={games}
+                  username={username}
+                  selected={selectedGame?.uuid ?? null}
+                  freshIds={freshIds}
+                  onSelect={openGame}
+                />
+                {monthsLoaded < archives.length && (
+                  <button className="ghost full" onClick={loadOlder} disabled={loading}>
+                    Load older games
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="intro">
+                <h2>Unlimited game reviews</h2>
+                <p className="muted">
+                  Enter your Chess.com username to load your finished games, or paste a PGN. Stockfish runs in your browser,
+                  so reviews are free and unlimited.
                 </p>
               </div>
-              <GameList
-                games={games}
-                username={username}
-                selected={selectedGame?.uuid ?? null}
-                freshIds={freshIds}
-                onSelect={openGame}
-              />
-              {monthsLoaded < archives.length && (
-                <button className="ghost full" onClick={loadOlder} disabled={loading}>
-                  Load older games
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="intro">
-              <h2>Unlimited game reviews</h2>
-              <p className="muted">
-                Enter your Chess.com username to load your finished games, or paste a PGN. Stockfish runs in your browser,
-                so reviews are free and unlimited.
-              </p>
-            </div>
-          )}
-        </aside>
+            )}
+          </aside>
 
-        <section className="center">
-          {game && review ? (
-            <>
-              <div className="player-strip">
-                <PlayerTag {...(orientation === 'white' ? players.black : players.white)} side={orientation === 'white' ? 'b' : 'w'} />
-              </div>
-              <ReviewBoard
-                game={game}
-                review={review}
-                analyses={analyses}
-                ply={ply}
-                orientation={orientation}
-                showEngine={showEngine}
-              />
-              <div className="player-strip">
-                <PlayerTag {...(orientation === 'white' ? players.white : players.black)} side={orientation === 'white' ? 'w' : 'b'} />
-              </div>
-              <div className="nav">
-                <button onClick={() => setPly(0)} aria-label="First move">⏮</button>
-                <button onClick={() => setPly((p) => Math.max(0, p - 1))} aria-label="Previous move">◀</button>
-                <button onClick={() => setPly((p) => Math.min(maxPly, p + 1))} aria-label="Next move">▶</button>
-                <button onClick={() => setPly(maxPly)} aria-label="Last move">⏭</button>
-                <button className="ghost" onClick={() => setFlipped((f) => !f)}>Flip</button>
-                <label className="check">
-                  <input type="checkbox" checked={showEngine} onChange={(e) => setShowEngine(e.target.checked)} />
-                  Engine move
-                </label>
-              </div>
-            </>
-          ) : (
-            <div className="empty-board muted">{reviewError ?? 'Pick a game to review.'}</div>
-          )}
-        </section>
-
-        <aside className="panel">
-          {game && review && (
-            <>
-              {!complete && (
-                <div className="progress">
-                  <div className="progress-bar" style={{ width: `${Math.round(progress * 100)}%` }} />
-                  <span>Analyzing… {Math.round(progress * 100)}%</span>
+          <section className="center">
+            {game && review ? (
+              <>
+                <div className="player-strip">
+                  <PlayerTag {...(orientation === 'white' ? players.black : players.white)} side={orientation === 'white' ? 'b' : 'w'} />
                 </div>
-              )}
-              {reviewError && <div className="banner error">{reviewError}</div>}
-              <div className="coach">
-                {current && currentPly ? (
-                  <>
-                    <span className="move-badge big" style={{ background: LABEL_META[current.label].color }}>
-                      {LABEL_META[current.label].symbol}
-                    </span>
-                    <div>
-                      <div>{describeMove(current.label, currentPly.san, current.bestSan)}</div>
-                      <div className="muted small">Eval {formatScore(current.scoreAfter)}</div>
-                    </div>
-                  </>
-                ) : currentPly ? (
-                  <span className="muted">Analyzing {currentPly.san}…</span>
-                ) : (
-                  <span className="muted">Starting position. Use ← → to step through the game.</span>
+                <ReviewBoard
+                  game={game}
+                  review={review}
+                  analyses={analyses}
+                  ply={ply}
+                  orientation={orientation}
+                  showEngine={showEngine}
+                />
+                <div className="player-strip">
+                  <PlayerTag {...(orientation === 'white' ? players.white : players.black)} side={orientation === 'white' ? 'w' : 'b'} />
+                </div>
+                <div className="nav">
+                  <button onClick={() => setPly(0)} aria-label="First move">⏮</button>
+                  <button onClick={() => setPly((p) => Math.max(0, p - 1))} aria-label="Previous move">◀</button>
+                  <button onClick={() => setPly((p) => Math.min(maxPly, p + 1))} aria-label="Next move">▶</button>
+                  <button onClick={() => setPly(maxPly)} aria-label="Last move">⏭</button>
+                  <button className="ghost" onClick={() => setFlipped((f) => !f)}>Flip</button>
+                  <label className="check">
+                    <input type="checkbox" checked={showEngine} onChange={(e) => setShowEngine(e.target.checked)} />
+                    Engine move
+                  </label>
+                </div>
+              </>
+            ) : (
+              <div className="empty-board muted">{reviewError ?? 'Pick a game to review.'}</div>
+            )}
+          </section>
+
+          <aside className="panel">
+            {game && review && (
+              <>
+                {!complete && (
+                  <div className="progress">
+                    <div className="progress-bar" style={{ width: `${Math.round(progress * 100)}%` }} />
+                    <span>Analyzing… {Math.round(progress * 100)}%</span>
+                  </div>
                 )}
-              </div>
-              <EvalGraph review={review} ply={ply} onSelect={setPly} />
-              <Summary review={review} white={players.white} black={players.black} complete={complete} />
-              <MoveList game={game} review={review} ply={ply} onSelect={setPly} />
-              {selectedGame && (
-                <a className="muted small source-link" href={selectedGame.url} target="_blank" rel="noreferrer">
-                  View game on Chess.com ↗
-                </a>
-              )}
-            </>
-          )}
-        </aside>
-      </main>
+                {reviewError && <div className="banner error">{reviewError}</div>}
+                <div className="coach">
+                  {current && currentPly ? (
+                    <>
+                      <span className="move-badge big" style={{ background: LABEL_META[current.label].color }}>
+                        {LABEL_META[current.label].symbol}
+                      </span>
+                      <div>
+                        <div>{describeMove(current.label, currentPly.san, current.bestSan)}</div>
+                        <div className="muted small">Eval {formatScore(current.scoreAfter)}</div>
+                      </div>
+                    </>
+                  ) : currentPly ? (
+                    <span className="muted">Analyzing {currentPly.san}…</span>
+                  ) : (
+                    <span className="muted">Starting position. Use ← → to step through the game.</span>
+                  )}
+                </div>
+                <EvalGraph review={review} ply={ply} onSelect={setPly} />
+                <Summary review={review} white={players.white} black={players.black} complete={complete} />
+                <MoveList game={game} review={review} ply={ply} onSelect={setPly} />
+                {selectedGame && (
+                  <a className="muted small source-link" href={selectedGame.url} target="_blank" rel="noreferrer">
+                    View game on Chess.com ↗
+                  </a>
+                )}
+              </>
+            )}
+          </aside>
+        </main>
+      )}
     </div>
   )
 }

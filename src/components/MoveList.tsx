@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { GameReview, ParsedGame } from '../lib/review'
 import { LABEL_META } from '../lib/labels'
 
-type Props = { game: ParsedGame; review: GameReview; ply: number; onSelect: (ply: number) => void }
+type Props = { game: ParsedGame; review: GameReview; ply: number; onSelect?: (ply: number) => void }
 
 export function MoveList({ game, review, ply, onSelect }: Props) {
   const list = useRef<HTMLDivElement>(null)
@@ -32,8 +32,8 @@ export function MoveList({ game, review, ply, onSelect }: Props) {
               <button
                 key={c}
                 ref={selected ? active : undefined}
-                className={`move-cell${selected ? ' selected' : ''}`}
-                onClick={() => onSelect(i + 1)}
+                className={`move-cell${selected ? ' selected' : ''}${onSelect ? '' : ' static'}`}
+                onClick={onSelect && (() => onSelect(i + 1))}
                 title={meta?.name}
               >
                 {meta && (

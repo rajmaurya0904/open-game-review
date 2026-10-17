@@ -30,6 +30,11 @@ export type ParsedGame = {
 export function parseGame(pgn: string): ParsedGame {
   const chess = new Chess()
   chess.loadPgn(pgn)
+  return gameFromChess(chess)
+}
+
+/** Builds the move-by-move view of a game from a chess.js instance. */
+export function gameFromChess(chess: Chess): ParsedGame {
   const history = chess.history({ verbose: true })
   const startFen = history[0]?.before ?? chess.fen()
   const plies = history.map((m) => ({
@@ -189,12 +194,14 @@ export function buildReview(game: ParsedGame, analyses: (PositionAnalysis | unde
     }
   })
 
-  // "Miss": the opponent just erred and this move handed most of it back.
   for (let i = 1; i < moves.length; i++) {
     const prev = moves[i - 1]
     const cur = moves[i]
     if (!prev || !cur) continue
     const opened = prev.label === 'mistake' || prev.label === 'blunder' || prev.label === 'miss'
+    // Grabbing material the opponent just left hanging is best, not great.
+    if (opened && cur.label === 'great' && cur.ply.captured) cur.label = 'best'
+    // "Miss": the opponent just erred and this move handed most of it back.
     if (!opened || !['inaccuracy', 'mistake', 'blunder'].includes(cur.label)) continue
     const before = 100 - prev.winBefore // this player's chances before the opponent's error
     if (cur.winBefore - cur.winAfter >= 10 && cur.winAfter >= before - 5) cur.label = 'miss'
