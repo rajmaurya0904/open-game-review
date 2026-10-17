@@ -2,6 +2,8 @@
 
 Free, unlimited chess game reviews for your Chess.com games. Stockfish 18 runs in your browser. No account, server or subscription needed.
 
+**Try it: https://rajmaurya0904.github.io/open-game-review/**
+
 - **Load your games by username** through Chess.com's official [published-data API](https://www.chess.com/news/view/published-data-api).
 - **Watch for new games:** while watching is on, the app checks every 30 seconds. When a game finishes, its review opens automatically, usually within a minute or two (the API caches responses for about 60 seconds).
 - **Full review:** every move gets a label (Brilliant, Great, Best, Excellent, Good, Inaccuracy, Mistake, Miss, Blunder). You also get an accuracy score for each player, an eval bar and graph, an arrow for the better move, and the engine's choice in any position.
